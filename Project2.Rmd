@@ -1,0 +1,197 @@
+---
+title: "Project 2"
+author: "Neil Sebastian"
+date: "2023-11-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(rvest)
+library(dplyr)
+library(stringr)
+library(knitr)
+library(tidyr)
+```
+
+## **Section 1**
+The dataset I chose is the NBA G League PPG (Points Per Game) data set. It not only includes average points per game but also shooting percentages, FT made (Free Throws), and more. It sources from the Basketball Realm site which sources directly from the NBA/NBA G League. The link as well as a picture of the site is provided here -> [GLeague PPG](https://basketball.realgm.com/dleague/stats/2023/Averages/Qualified/points/All/desc/1/Regular_Season). I chose this dataset because I enjoy watching basketball and NBA was taken so I moved on to the G League. I will investigate the relationship between PPG and predictor variables that could be 3PM (3 Point Makes), FG% (Field Goal %), among others. ![](/Users/neilsebastian/Downloads/GLeagueStats.jpg)
+
+## **Section 2**
+To obtain the data I scraped it from the Basketball Realm G League stats website by using the selector gadget tool on chrome. I then created a organized tibble to display this information. I had to use a loop to scrape across multiple pages of data. I have displayed the tibble below.
+```{r scrape, echo = FALSE}
+
+PlayerName = c()
+PlayerPPG = c()
+PlayerGP = c()
+PlayerMins= c()
+PlayerFGA = c()
+PlayerFGM = c()
+PlayerFGPer = c()
+Player3PA = c()
+Player3PM = c()
+Player3PPer = c()
+PlayerFTA = c()
+PlayerFTM = c()
+PlayerFTPer = c()
+#Using a loop in combination with selector gadget to scrape the data across multiple pages.
+#Also making sure to parse number for all numerical variable
+for(i in 1:3){
+  GLeagueStatsLink <- paste("https://basketball.realgm.com/dleague/stats/2023/Averages/Qualified/points/All/desc//Regular_Season",as.character(i),sep="")
+ GLeaguePage = read_html(GLeagueStatsLink)
+    PlayerName = append(PlayerName, html_text(html_elements(GLeaguePage, ".nowrap a")))
+    PlayerPPG = append(PlayerPPG, html_text(html_elements(GLeaguePage, "td:nth-child(6)")))
+      PlayerPPG = parse_number(PlayerPPG)
+    PlayerGP = append(PlayerGP, html_text(html_elements(GLeaguePage, "td:nth-child(4)")))
+      PlayerGP = parse_number(PlayerGP)
+    PlayerMins = append(PlayerMins, html_text(html_elements(GLeaguePage, "td:nth-child(5)")))
+      PlayerMins = parse_number(PlayerMins)
+    PlayerFGA = append(PlayerFGA, html_text(html_elements(GLeaguePage, "td:nth-child(8)")))
+      PlayerFGA = parse_number(PlayerFGA)
+    PlayerFGM = append(PlayerFGM, html_text(html_elements(GLeaguePage, "td:nth-child(7)")))
+      PlayerFGM = parse_number(PlayerFGM)
+    PlayerFGPer = append(PlayerFGPer, html_text(html_elements(GLeaguePage, "td:nth-child(9)")))
+      PlayerFGPer = parse_number(PlayerFGPer)
+    Player3PA = append(Player3PA, html_text(html_elements(GLeaguePage, "td:nth-child(11)")))
+      Player3PA = parse_number(Player3PA)
+    Player3PM = append(Player3PM, html_text(html_elements(GLeaguePage, "td:nth-child(10)")))
+      Player3PM = parse_number(Player3PM)
+    Player3PPer = append(Player3PPer, html_text(html_elements(GLeaguePage, "td:nth-child(12)")))
+      Player3PPer = parse_number(Player3PPer)
+    PlayerFTA = append(PlayerFTA, html_text(html_elements(GLeaguePage, "td:nth-child(14)")))
+      PlayerFTA = parse_number(PlayerFTA)
+    PlayerFTM = append(PlayerFTM, html_text(html_elements(GLeaguePage, "td:nth-child(13)")))
+      PlayerFTM = parse_number(PlayerFTM)
+    PlayerFTPer = append(PlayerFTPer, html_text(html_elements(GLeaguePage, "td:nth-child(15)")))
+      PlayerFTPer = parse_number(PlayerFTPer)
+                
+}
+
+#Create a tibble containing all the data we scraped  
+GLeagueStats <- tibble("Name" = PlayerName, "PPG" = PlayerPPG, "GP" = PlayerGP, "Mins" = PlayerMins,"FGA" = PlayerFGA, "FGM" = PlayerFGM, "FG%" = PlayerFGPer,"3PA" = Player3PA, "3PM" = Player3PM, "3P%" = Player3PPer,"FTA" = PlayerFTA, "FTM" = PlayerFTM,"FT%" = PlayerFTPer)
+#Write this to a dataset aswell
+write.csv(GLeagueStats, "GLeagueStats.csv")
+
+```
+
+```{r, echo = FALSE}
+#Display the tibble in the knit
+print(GLeagueStats)
+```
+## **Section 3**
+Now that the dataset has been cleaned, I have also added 3 new variables called PPM, PF3PG and, PerPF3. Explanations for each are in the table below.
+```{r, echo = FALSE}
+# Create a new variable called PPM (Points per Minute)
+GLeagueStats = mutate(GLeagueStats, PPM = PPG / Mins)
+# Create another new variable called PF3PG (Points from 3's per game)
+GLeagueStats = mutate(GLeagueStats, PF3PG = Player3PM * 3)
+# Create another new variable called PerPF3 (Percentage of total points from 3-pointers)
+GLeagueStats = mutate(GLeagueStats, PerPF3 = (PF3PG / PPG) * 100)
+# Re-Write Dataset with new variables and name format
+write.csv(GLeagueStats, "GLeagueStats.csv")
+
+```
+
+
+```{r, echo = FALSE}
+VariablesTable <- data.frame(
+
+  Variable = c("PlayerName", "PlayerPPG (PPG)", "PlayerGP (GP)", "PlayerMins (Mins)", "PlayerFGA (FGA)", "PlayerFGM (FGM)", "PlayerFGPer (FG%)", "Player3PA (3PA)", "Player3PM (3PM)", "Player3PPer (3P%)", "PlayerFTA (FTA)", "PlayerFTM (FTM)", "PlayerFTPer (FT%)","PointsPerMinute (PPM)", "PointFrom3's (PF3PG)", "PercentagePointsFrom3PerGame (PerPF3)"),
+
+  Type = c("Categorical/Name", "Numerical", "Numerical", "Numerical","Numerical", "Numerical", "Numerical", "Numerical", "Numerical", "Numerical", "Numerical", "Numerical","Numerical", "Numerical", "Numerical", "Numerical"),
+
+  Description = c("Name of the basketball player.", 
+"Points per game scored by the player (PPG).", "Number of games played by the player (GP).", "Total minutes played by the player (Mins).", "Field goal attempts per game by the player (FGA).", "Field goals made per game by the player (FGM).", "Field goal percentage (FG%) of the player.", "Three-point attempts per game by the player (3PA).", "Three-pointers made per game by the player (3PM).", "Three-point percentage (3P%) of the player.", "Free throw attempts per game by the player (FTA).", "Free throws made per game by the player (FTM).", "Free throw percentage (FT%) of the player.", "Points per minute scored by the player (PPM).", "Points scored from three-pointers per game (PF3PG).", "Percentage of points scored from three-pointers per game (PerPF3).")
+
+)
+
+print(kable(VariablesTable))
+
+```
+
+## **Section 4**
+
+**Univariate of PPG**: The distribution of Points Per Game (PPG) for the dataset can be summarized using the five-number summary: the minimum value is `r min(GLeagueStats$PPG)`, the first quartile (Q1) is 15.10, the median (Q2) is `r median(GLeagueStats$PPG)`, the third quartile (Q3) is 19.65, and the maximum value is `r max(GLeagueStats$PPG)`. This summary along with the graph suggests that the majority of players have PPG values concentrated in the interquartile range (IQR) between 15.10 and 19.65, with a median value of 16.80.
+
+**Univariate of GP**: The distribution of Games Played (GP) is described by the five-number summary: the minimum value is `r min(GLeagueStats$GP)`, the first quartile (Q1) is 23, the median (Q2) is `r median(GLeagueStats$GP)`, the third quartile (Q3) is 29, and the maximum value is `r max(GLeagueStats$GP)`. This summary along with the graph suggests that the majority of players have GP values concentrated in the interquartile range (IQR) between 23 and 29, with a median value of 26.
+
+**Univariate of PPM (Points Per Minute)**: The distribution of Points Per Minute (PPM) is summarized by the five-number summary: the minimum value is approximately 0.41, the first quartile (Q1) is about 0.50, the median (Q2) is around 0.55, the third quartile (Q3) is approximately 0.62, and the maximum value is roughly 0.77. This summary indicates a concentrated distribution with the majority of players having PPM values within the interquartile range.
+
+**Univariate of Points from 3 **: The distribution of Points from 3-Pointers per game (PF3PG) is characterized by the five-number summary: the minimum value is 0.0, the first quartile (Q1) is 3.6, the median (Q2) is 5.7, the third quartile (Q3) is 7.5, and the maximum value is 13.5. This summary suggests that the majority of players contribute points from 3-pointers per game within the interquartile range (IQR) between 3.6 and 7.5, with a median value of 5.7.
+
+```{r, echo = FALSE}
+#Univariate of PPG
+ggplot(GLeagueStats) + geom_histogram(aes(x = PPG), col = "white", fill = "blue", binwidth = .5,) + labs (title =  "Distribution of PPG")
+fivenum(GLeagueStats$PPG)
+#Univariate of GP
+ggplot(GLeagueStats) + geom_bar(aes(x=GP),col = "black", fill="green",width = 1,) + labs(title = "Distribution of Games Played")
+fivenum(GLeagueStats$GP)
+#Univariate of PPM 
+ggplot(GLeagueStats) + geom_histogram(aes(x=PPM),  col = "red", fill="white",) + labs (title = "Distribution of Points Per Minute")
+fivenum(GLeagueStats$PPM)
+#Univaraite of PF3 
+ggplot(GLeagueStats) +geom_histogram(aes(x = `PF3PG`), col = "gray", binwidth = .5) + labs(title = "Distribution of Points From 3")
+fivenum(GLeagueStats$'PF3PG')
+```
+
+## **Section 5**
+
+**Multivarate of PPG and Mins**: The correlation between Points Per Game (PPG) and Minutes Played (Mins) is 0.51, suggesting a slight positive correlation. This implies that, on average, players who score more points tend to play more minutes.
+
+
+**Multivariate of PPG and FG%**: For the multivariate distribution of PPG and Field Goal Percentage (FG%), the correlation is approximately -0.01 (-.008), indicating a weak and near-zero correlation. This implies that there is little to no linear relationship between a player's PPG and FG%. This is surprising because most would assume shooting at a higher percent means more scoring.
+
+**Multivariate of FG% and 3PA**: The correlation between Field Goal Percentage (FG%) and 3-Point Attempts (3PA) is -0.72, suggesting a strong negative correlation. This implies that, on average, players with higher FG% tend to shoot fewer three pointers.
+
+**Multivariate of 3PM and PPG**: The correlation between 3-Pointers Made (3PM) and Points Per Game (PPG) is 0.27, indicating a weak positive correlation. This suggests that there is a small positive association between a player's three-point scoring and their overall points per game performance. This isn't too surprising but the correlation isn't as strong as one might assume. Especially considering in todays basketball world it feels like the 3P is everything.
+
+**Multivariate of PPG and PerPF3**: To find the relationship between these two variables instead of plotting I used an if statement. This if statement concluded that "Players with below-median PPG have a higher average PerPF3." This if statement works by comparing the average Percent points from 3 to players above and below the median PPG. Then compares these averages and prints a statement based on the relationship. While the outcome may seem surprising it makes sense because most points by true scorers in the G League tend to be inside the arc.
+```{r, echo = FALSE}
+#multivarate of PPG and Mins
+ggplot(GLeagueStats) + geom_point(aes(x = PPG, y = Mins), col = "blue",) +labs(title = "Multivariate Distribution of PPG and Mins",x = "Points Per Game (PPG)", y = "Minutes Played (Mins)")
+cor(GLeagueStats$PPG, GLeagueStats$Mins)
+#multivariate of PPG and FG%
+ggplot(GLeagueStats) + geom_point(aes(x = PPG, y = `FG%`), col = "purple",) + labs(title = "Multivariate Distribution of PPG and FG%", x = "Points Per Game (PPG)", y= "Field Goal Percentage %")
+cor(GLeagueStats$PPG, GLeagueStats$`FG%`)
+#multivariate of FG% and 3PA
+ggplot(GLeagueStats) + geom_point(aes(x = `FG%`, y = `3PA`), col = "green",) + labs(title = "Multivariate Distribution of FG% and 3PA", x = "Field Goal Percentage (FG%)", y = "3 Point Attempts (3PA)")
+cor(GLeagueStats$`FG%`, GLeagueStats$`3PA`)
+#multivariate of 3PM and PPG
+ggplot(GLeagueStats) + geom_point(aes(x = `3PM`, y = `PPG`), col = "skyblue",) + labs(title = "Multivariate Distribution of 3PM and PPG", x = "3 Point Makes (3PM)", y = "Points Per Game (PPG)")
+cor(GLeagueStats$`3PM`, GLeagueStats$PPG)
+
+```
+
+```{r, echo = FALSE}
+AVGPerPF3HighPPG <- mean(GLeagueStats$PerPF3[GLeagueStats$PPG >= median(GLeagueStats$PPG)])
+AVGPerPF3LowPPG <- mean(GLeagueStats$PerPF3[GLeagueStats$PPG < median(GLeagueStats$PPG)])
+
+if (AVGPerPF3HighPPG  > AVGPerPF3LowPPG) {
+  print("Players with above-median PPG have a higher average PerPF3.")
+} else if (AVGPerPF3HighPPG  < AVGPerPF3LowPPG) {
+  print("Players with below-median PPG have a higher average PerPF3.")
+} else {
+  print("There is no significant difference in average PerPF3 between the two groups.")
+}
+```
+## **Section 6**
+To ensure reproducibility I first included comments when necessary to describe what steps I took to import data and prepare it for analysis. I also shared my .Rmd file and my dataset with a peer. I had them open both on their device and knit it. It ran smoothly without any reproduction errors.
+
+## **Section 7**
+In my code I used 5 choice elements. The first choice element I used was in line code. I used this during my univariate descriptions to display the median, min, and max for the distributions. I also created 3 variables of intrest, these variables are PointsPerMinute (PPM), PointFrom3's (PF3PG) and, PercentagePointsFrom3PerGame (PerPF3). These variables allow me to see the relationships between 3s and Point averages without having to plot them. However, I did also plot PPM. Next I also chose to use a loop to scrape the data. I had to use a loop because there wre multiple pages of data and it couldn't be analyzed effectively without one. This goes hand in hand with my second to last choice element which was webscraping a variable of intrest using code. Finally, I used an 'If' statement to compare the relationship between Percentage of Points from 3 and Points Per game, this shows up during my multivariate analysis.
+
+## **Section 8**
+There are many takeaways from this experiment The analysis of G League players shows interesting patterns. Players who score more also tend to spend more time playing, indicating a connection between Points Per Game (PPG) and Minutes Played (Mins). This does not come as a surprise. However, the relationship between PPG and Field Goal Percentage (FG%) is not straightforward. A higher shooting percentage doesn't always mean more scoring. Additionally, players with better shooting percentages tend to take fewer three-pointers. Next, the connection between three-pointers made (3PM) and PPG is very slight. Scoring more three-pointers doesn't strongly predict overall scoring. An exploration of players with lower PPG indicates they contribute a higher percentage of points from three-pointers.
+
+In simpler terms, while players who score a lot also play more, shooting accuracy doesn't always translate to more points. Players with higher accuracy might not attempt as many three-pointers. Scoring from beyond the arc doesn't strongly relate to overall scoring, especially for players with lower overall scores.
+
+This lab has challenged very common ideas about how basketball is played as well as confirmed some common concepts. It has helped to expand on the idea that when it comes to sports truly anything is possible as these numbers will continue to change from season to season.
+
+## **Section 9**
+**References**
+
+Websites: [Basketball Realm](https://basketball.realgm.com/dleague/stats/2023/Averages/Qualified/points/All/desc/1/Regular_Season)  https://basketball.realgm.com/dleague/stats/2023/Averages/Qualified/points/All/desc/1/Regular_Season
+Images: [Screenshot taken from Basketball Realm](https://basketball.realgm.com/dleague/stats/2023/Averages/Qualified/points/All/desc/1/Regular_Season) (https://basketball.realgm.com/dleague/stats/2023/Averages/Qualified/points/All/desc/1/Regular_Season)
+
